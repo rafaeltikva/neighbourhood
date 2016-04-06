@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/neighbourhood.css"/>
+    <title></title>
+</head>
+<body>
+
+<div id="search-place-wrap">
+    <label>Search:</label>
+    <input data-bind="textInput: searchInput" type="text" placeholder="Enter a location" />
+</div>
+
+<div id="locations-list-wrap">
+    <ul data-bind="foreach: markerObjects">
+        <li data-bind="visible: $root.helpers.showMarker(marker)"><a href="#" data-bind="text: marker.title, click: $root.handlers.markerClick($data), clickBubble: false"></a></li>
+    </ul>
+</div>
+
+<div id="map">
+
+    Setting your location...
+
+</div>
+
+
+<script async defer type="text/javascript"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCrvzkulJxohi-LZB2bRPKQGyz7CZjZcgo&libraries=places&callback=neighbourhood.initMap"></script>
+
+<script type="application/javascript" src="bower_components/jquery/jquery.min.js"></script>
+<script type="application/javascript" src="bower_components/knockout/knockout.js"></script>
+<script type="application/javascript" src="bower_components/underscore/underscore-min.js"></script>
+<script type="application/javascript" src="js/neighbourhood.js"></script>
+</body>
+</html>

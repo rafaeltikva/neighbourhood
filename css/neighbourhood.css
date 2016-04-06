@@ -1,0 +1,74 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#map {
+    width: 70%;
+    height: 100%;
+}
+
+.info-window {
+    padding: 15px;
+}
+
+#search-place-wrap label, #search-place-wrap input {
+    box-sizing: border-box;
+    height: 50px;
+}
+
+#search-place-wrap label {
+    display: inline-block;
+    background: #eee;
+    border: 1px solid #eee;
+    width: 5em;
+    padding: 1em;
+    float: left;
+}
+
+#search-place-wrap input {
+    font-size: inherit;
+    width: calc(100% - 5em);
+    padding: 1em;
+}
+
+::-webkit-input-placeholder {
+    font-style: italic;
+}
+
+:-moz-placeholder {
+    font-style: italic;
+}
+
+:-ms-input-placeholder {
+    font-style: italic;
+}
+
+#locations-list-wrap {
+    width: 30%;
+    float: left;
+    border: 1px solid #eee;
+    box-sizing: border-box;
+}
+
+#locations-list-wrap ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#locations-list-wrap ul li {
+    border: 1px solid #ebebeb;
+}
+
+#locations-list-wrap ul li:hover {
+    background-color: #eee;
+}
+
+#locations-list-wrap ul li a {
+    display: inline-block;
+    padding: 1em;
+    color: inherit;
+    width: 100%;
+    text-decoration: none;
+}
