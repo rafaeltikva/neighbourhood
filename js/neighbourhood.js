@@ -23,8 +23,21 @@ neighbourhood.initSettings = function (location) {
 
     this.map = this.map || new google.maps.Map($('#map')[0], {
         center: location,
-        zoom: 7
+        zoom: 7,
+        rotateControl: true,
+        fullScreenControl: true,
+        scaleControl: true
     });
+
+    // Initialize lat lng object
+    neighbourhood.position = location;
+
+    // Initialize infoWindow
+    neighbourhood.infoWindow = new google.maps.InfoWindow({map: neighbourhood.map});
+
+    // Set up Google Places Autocomplete
+    neighbourhood.initAutoComplete();
+
     return {
         map: this.map,
         markers: [
@@ -53,10 +66,6 @@ neighbourhood.initObservables = function () {
 };
 
 neighbourhood.tryGeoLocation = function () {
-
-    neighbourhood.position = neighbourhood.position || {};
-
-    neighbourhood.infoWindow = new google.maps.InfoWindow({map: neighbourhood.map});
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function (position) {
@@ -91,9 +100,7 @@ neighbourhood.addMarkerToMap = function (markerOptions) {
 
             // Add event listeners
             for (event in markerObj.custom.markerEvents) {
-                if (event === 'click') {
-                    markerObj.marker.addListener(event, markerObj.custom.markerEvents[event](markerObj));
-                }
+                markerObj.marker.addListener(event, markerObj.custom.markerEvents[event](markerObj));
             }
         }
     }
@@ -125,7 +132,7 @@ neighbourhood.getGeoCode = function (geocoderOptions, includeNearbyPlaces) {
                 console.log(results); // all the results
 
                 // set map to geolocation position
-                neighbourhood.map.setCenter(geocoderOptions.location);
+                neighbourhood.map.panTo(geocoderOptions.location);
                 neighbourhood.map.setZoom(16);
 
                 // set infoWindow to geolocation position
@@ -140,29 +147,33 @@ neighbourhood.getGeoCode = function (geocoderOptions, includeNearbyPlaces) {
                 // add custom css styles to infowindow container
                 //neighbourhood.helpers.styleInfoWindow('info-window');
 
-                neighbourhood.markerObjects.push(neighbourhood.addMarkerToMap({
-                        anchorPoint: new google.maps.Point(0, 10),
-                        position: geocoderOptions.location,
-                        map: neighbourhood.map,
-                        title: address,
-                        draggable: true,
-                        animation: google.maps.Animation.DROP,
-                        custom: {
-                            markerEvents: {
-                                click: neighbourhood.handlers.markerClick,
-                                rightclick: neighbourhood.handlers.markerClick
-                            }
+
+                neighbourhood.foundMarkerObj = neighbourhood.addMarkerToMap({
+                    anchorPoint: new google.maps.Point(0, 10),
+                    position: geocoderOptions.location,
+                    map: neighbourhood.map,
+                    title: address,
+                    draggable: true,
+                    animation: google.maps.Animation.DROP,
+                    custom: {
+                        markerEvents: {
+                            click: neighbourhood.handlers.markerClick,
+                            rightclick: neighbourhood.handlers.markerClick
                         }
                     }
-                ));
+                });
+                neighbourhood.markerObjects.push(neighbourhood.foundMarkerObj);
 
                 if (includeNearbyPlaces) {
                     neighbourhood.getNearbyPlaces({
                         'location': geocoderOptions.location,
                         'radius': 1000,
-                        'types': ['shopping_mall', 'bar', 'gym']
+                        'types': ['establishment']
                     });
                 }
+
+                neighbourhood.setAutoComplete();
+
             }
 
             else {
@@ -221,6 +232,26 @@ neighbourhood.getNearbyPlaces = function (searchOptions) {
 
 };
 
+neighbourhood.initAutoComplete = function () {
+
+    this.autoComplete = new google.maps.places.Autocomplete($('input#search-input')[0], {
+        'types': ['establishment']
+    });
+
+    this.autoComplete.addListener('place_changed', neighbourhood.handlers.onPlaceChanged);
+};
+
+neighbourhood.setAutoComplete = function () {
+
+    var circle = new google.maps.Circle({
+        center: neighbourhood.position,
+        radius: 1000 // TODO make the radius configurable (use the same radius parameter as nearbyPlaces)
+    });
+
+    this.autoComplete.setBounds(circle.getBounds());
+
+};
+
 neighbourhood.handlers = {
     handleLocationError: function (browserHasGeoLocation) {
         neighbourhood.infoWindow.setPosition(neighbourhood.position);
@@ -249,6 +280,45 @@ neighbourhood.handlers = {
             }
         }
 
+    },
+    onPlaceChanged: function () {
+        var place = neighbourhood.autoComplete.getPlace();
+        if (place.geometry) {
+            neighbourhood.position = place.geometry.location;
+            neighbourhood.map.panTo(neighbourhood.position);
+            neighbourhood.map.setZoom(16);
+
+            neighbourhood.infoWindow.setPosition(neighbourhood.position);
+            neighbourhood.helpers.setInfoWindowContent(place.name);
+
+            neighbourhood.helpers.removeMarkers();
+            neighbourhood.helpers.clearSearchInput();
+
+            neighbourhood.foundMarkerObj = neighbourhood.addMarkerToMap({
+                anchorPoint: new google.maps.Point(0, 10),
+                position: neighbourhood.position,
+                map: neighbourhood.map,
+                title: place.name,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                custom: {
+                    markerEvents: {
+                        click: neighbourhood.handlers.markerClick,
+                        rightclick: neighbourhood.handlers.markerClick
+                    }
+                }
+            });
+
+            neighbourhood.markerObjects.push(neighbourhood.foundMarkerObj);
+
+            neighbourhood.getNearbyPlaces({
+                'location': neighbourhood.position,
+                'radius': 1000,
+                'types': ['establishment']
+            });
+
+            neighbourhood.setAutoComplete();
+        }
     }
 
 };
@@ -273,7 +343,7 @@ neighbourhood.helpers = {
 
     },
 
-    showMarker: function(marker) {
+    showMarker: function (marker) {
 
         if (marker.title.toLocaleLowerCase().indexOf(neighbourhood.searchInput().toLocaleLowerCase()) > -1) {
             marker.setVisible(true);
@@ -283,6 +353,25 @@ neighbourhood.helpers = {
             marker.setVisible(false);
             return false;
         }
+    },
+
+    removeMarkers: function () {
+
+        for (var i = 0; i < neighbourhood.markerObjects().length; i++) {
+            neighbourhood.markerObjects()[i].marker.setMap(null);
+        }
+
+        neighbourhood.foundMarkerObj.marker.setMap(null);
+
+        // delete marker objects from observableArray
+        neighbourhood.markerObjects.removeAll();
+
+    },
+
+    clearSearchInput: function () {
+        // clear search input
+        neighbourhood.searchInput('');
+
     },
 
     setInfoWindowContent: function (content, customContent) {
@@ -296,6 +385,7 @@ neighbourhood.helpers = {
         }
         neighbourhood.infoWindow.setContent('<div class="info-window"><div class="info-window-text">' + content + '</div>' + customImage + '</div>');
     }
+
 };
 
 // initialize observables

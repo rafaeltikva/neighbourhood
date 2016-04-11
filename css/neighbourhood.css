@@ -12,6 +12,13 @@ html, body {
     padding: 15px;
 }
 
+
+#search-place-wrap {
+    position: fixed;
+    width: 100%;
+    z-index: 1;
+}
+
 #search-place-wrap label, #search-place-wrap input {
     box-sizing: border-box;
     height: 50px;
@@ -45,13 +52,17 @@ html, body {
 }
 
 #locations-list-wrap {
+    height: 100%;
     width: 30%;
     float: left;
     border: 1px solid #eee;
     box-sizing: border-box;
+    margin-top: 50px;
 }
 
 #locations-list-wrap ul {
+    height: 100%;
+    overflow: scroll;
     list-style: none;
     padding: 0;
     margin: 0;
